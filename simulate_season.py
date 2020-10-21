@@ -22,6 +22,7 @@ def simulate_game_poisson(home_expected_scored, home_expected_conceded, away_exp
     return home_goals, away_goals
 
 def get_expected_values(df):
+    # Generates a DataFrame with teams and their excpected values
     teams =list(set(df['HomeTeam']))
     expected_values = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
     for i in range(len(teams)):
@@ -36,6 +37,7 @@ def get_expected_values(df):
     return expected_values
 
 def simulate_season(df):
+    # Main funciton
     home_teams = list(df['HomeTeam'])
     away_teams = list(df['AwayTeam'])
     
@@ -63,6 +65,7 @@ def simulate_season(df):
     return table
 
 class Table():
+    # Makes a table 
     def __init__(self):
         self.table = pd.DataFrame(
             columns = ['Team','Points','Win','Draw','Lose','Goals for','Goals against','Goal difference']
@@ -84,6 +87,7 @@ class Table():
         return sorted_table
     
 class Team():
+    # Team objects which populate the Table
     def __init__(self,name):
         self.name = name
         self.wins = 0
