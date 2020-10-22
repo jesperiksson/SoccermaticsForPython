@@ -8,10 +8,20 @@ Created on Tue Oct 20 16:54:26 2020
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Make DataFrames
 df1920 = pd.read_csv('PL1920.csv')
-df1819 = pd.read_csv('PL1920.csv')
+df1819 = pd.read_csv('PL1819.csv')
+
+#https://towardsdatascience.com/visualizing-the-2019-20-english-premier-league-season-with-matplotlib-and-pandas-fd491a07cfda    
+team_colors = {'Arsenal':'#ef0107', 'Aston Villa':'#95bfe5', 'Bournemouth':'#da291c', 'Brighton':'#0057b8',
+               'Burnley':'#6c1d45', 'Chelsea':'#034694', 'Crystal Palace':'#1b458f', 'Everton':'#003399',
+               'Leicester':'#003090', 'Liverpool':'#c8102e', 'Man City':'#6cabdd', 'Man United':'#da291c',
+               'Newcastle':'#241f20', 'Norwich':'#fff200', 'Sheffield United':'#ee2737', 
+               'Southampton':'#d71920', 'Tottenham':'#132257', 'Watford':'#fbee23', 'West Ham':'#7a263a',
+               'Wolves':'#fdb913'}
+teams = list(team_colors.keys())
 
 def simulate_game_poisson(home_expected_scored, home_expected_conceded, away_expected_scored, away_expected_conceded):
     # Simple model to predict the result using poisson distribution
@@ -20,6 +30,7 @@ def simulate_game_poisson(home_expected_scored, home_expected_conceded, away_exp
     home_goals = np.random.poisson(home_expected)
     away_goals = np.random.poisson(away_expected)    
     return home_goals, away_goals
+
 
 def get_expected_values(df):
     # Generates a DataFrame with teams and their excpected values
@@ -80,11 +91,11 @@ class Table():
                     columns= ['Team','Points','Win','Draw','Lose','Goals for','Goals against','Goal difference']
                     )
                 )
+        self.table = self.table.sort_values(by='Points',ascending=False)
+        self.table.index = range(1,len(self.table)+1)
     
     def show_table(self):
-        sorted_table = self.table.sort_values(by='Points',ascending=False)
-        sorted_table.index = range(1,len(sorted_table)+1)
-        return sorted_table
+        return self.table
     
 class Team():
     # Team objects which populate the Table
@@ -106,7 +117,30 @@ class Team():
         self.goals_for += scored
         self.goals_against += conceded
         
-#%%
+
+#%% Simulate a singloe season
 t = simulate_season(df1920)
 s = t.show_table()
 print(s)
+#%% CASE 1 - Naive approach: mu = (team A attack + team B defence) / 2. Set order of games 
+seasons = 300
+season_list = np.array([])
+for i in range(seasons):
+    season_list = np.append(season_list,simulate_season(df1920))
+#%%
+team = 'Aston Villa'
+for team in teams:
+    places = np.array(
+        [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))])
+    average_place = np.round(np.average(places),decimals = 0)
+    median_place = np.median(places)
+    plt.hist(places, 
+             bins = np.arange(1, places.max() + 1.5) - 0.5, 
+             histtype = 'bar',
+             color = team_colors[team],
+             ec = 'k')
+    plt.xticks(range(int(min(places)),int(max(places)+1)))
+    plt.xlabel('Position')
+    plt.ylabel('Frequency')
+    plt.title(team + ' end of season placement distribution over ' + str(seasons)+' seasons')
+    plt.show()
