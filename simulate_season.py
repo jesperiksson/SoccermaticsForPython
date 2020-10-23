@@ -21,7 +21,7 @@ team_colors = {'Arsenal':'#ef0107', 'Aston Villa':'#95bfe5', 'Bournemouth':'#da2
                'Newcastle':'#241f20', 'Norwich':'#fff200', 'Sheffield United':'#ee2737', 
                'Southampton':'#d71920', 'Tottenham':'#132257', 'Watford':'#fbee23', 'West Ham':'#7a263a',
                'Wolves':'#fdb913'}
-teams = list(team_colors.keys())
+
 
 def simulate_game_poisson(home_expected_scored, home_expected_conceded, away_expected_scored, away_expected_conceded):
     # Simple model to predict the result using poisson distribution
@@ -127,20 +127,66 @@ seasons = 300
 season_list = np.array([])
 for i in range(seasons):
     season_list = np.append(season_list,simulate_season(df1920))
-#%%
-team = 'Aston Villa'
+#%% Plot hist with selected teams positions
+fig = plt.figure(dpi=400)
+ax = fig.add_subplot(111)
+teams = list(team_colors.keys())
+teams = ['Man City','Liverpool','Arsenal','Chelsea','Man United']
+places = np.array([])
 for team in teams:
-    places = np.array(
-        [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))])
-    average_place = np.round(np.average(places),decimals = 0)
-    median_place = np.median(places)
-    plt.hist(places, 
-             bins = np.arange(1, places.max() + 1.5) - 0.5, 
-             histtype = 'bar',
-             color = team_colors[team],
-             ec = 'k')
-    plt.xticks(range(int(min(places)),int(max(places)+1)))
-    plt.xlabel('Position')
-    plt.ylabel('Frequency')
-    plt.title(team + ' end of season placement distribution over ' + str(seasons)+' seasons')
+    try:
+        places = np.concatenate((places,
+            [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))]),
+            axis = -1)
+    except ValueError:
+        places = np.array(
+            [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))])
+
+average_place = np.round(np.average(places),decimals = 0)
+median_place = np.median(places)
+plt.hist(places, 
+         bins = np.arange(1, places.max() + 1.5) - 0.5, 
+         histtype = 'bar',
+         color = [team_colors[t] for t in teams],
+         ec = 'k',
+         alpha = 0.9,
+         zorder = 2)
+plt.xticks(range(int(np.min(places)),int(np.max(places)+1)))
+plt.xlabel('Position')
+plt.ylabel('Frequency')
+plt.title('End of season placement distribution over ' + str(seasons)+' seasons')
+plt.legend(teams)
+ax.set_facecolor('lightgray')
+ax.grid(color = 'white',linewidth = 0.2,zorder = 1)
+plt.show()
+#%% Calculate frequency of each final position for each team
+rows = 4
+cols = 5
+n_places = cols*rows
+teams = list(team_colors.keys())
+
+
+places = np.array([])
+for team in teams:
+    try:
+        places = np.concatenate((places,
+            [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))]),
+            axis = -1)
+    except ValueError:
+        places = np.array(
+            [season_list[season].table.loc[season_list[season].table['Team'] == team].index for season in range(len(season_list))])
+
+freq = np.array([sum(places[:,t]==place+1) for t in range(len(teams)) for place in range(n_places)])
+freq = freq.reshape((len(teams),n_places)) # rows : teams, cols : places
+#%% Draw a pie chart for the distribution for each place
+
+for i in range(n_places):
+    plt.figure(dpi=400)
+    #ax = fig.add_subplot(rows,cols,i+1)
+    plt.pie(
+        freq[:,i],
+        labels = list(team_colors.keys()),
+        colors = list(team_colors.values()),
+        autopct='%1.1f%%',  # Draw percentage
+        rotatelabels=True)
     plt.show()
