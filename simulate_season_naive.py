@@ -10,6 +10,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from classes import Table, Team
+
 # Make DataFrames
 df1920 = pd.read_csv('PL1920.csv')
 df1819 = pd.read_csv('PL1819.csv')
@@ -32,7 +34,7 @@ def simulate_game_poisson(home_expected_scored, home_expected_conceded, away_exp
     return home_goals, away_goals
 
 
-def get_expected_values_1(df): # Naive approach, each team has a offense and a defense expected value
+def get_expected_values(df): # Naive approach, each team has a offense and a defense expected value
     # Generates a DataFrame with teams and their excpected values
     teams =list(set(df['HomeTeam']))
     expected_values = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
@@ -47,34 +49,12 @@ def get_expected_values_1(df): # Naive approach, each team has a offense and a d
     expected_values.index = range(1,len(teams)+1)
     return expected_values
 
-def get_expected_values_2(df): # Including home advantage, each team has two home and away parameters
-    # Generates a DataFrame with teams and their excpected values
-    teams =list(set(df['HomeTeam']))
-    expected_values_home = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
-    expected_values_away = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
-    for i in range(len(teams)):
-        avg_score_home = (np.sum(df.loc[df['HomeTeam'] == teams[i]]['FTHG']))/(len(df)/len(teams))
-        avg_letin_home = (np.sum(df.loc[df['HomeTeam'] == teams[i]]['FTAG']))/(len(df)/len(teams))
-        avg_score_away = (np.sum(df.loc[df['AwayTeam'] == teams[i]]['FTAG']))/(len(df)/len(teams))
-        avg_letin_away = (np.sum(df.loc[df['AwayTeam'] == teams[i]]['FTHG']))/(len(df)/len(teams))
-        expected_values_home = expected_values_home.append(
-            pd.DataFrame(
-                [[teams[i],avg_score_home,avg_letin_home]], columns = ['Team','ExpectedScored','ExpectedConceded'])
-            )
-        expected_values_away = expected_values_away.append(
-            pd.DataFrame(
-                [[teams[i],avg_score_away,avg_letin_away]], columns = ['Team','ExpectedScored','ExpectedConceded'])
-            )
-    expected_values_home.index = range(1,len(teams)+1)
-    expected_values_away.index = range(1,len(teams)+1)
-    return expected_values_home, expected_values_away
-
 def simulate_season(df):
     # Main function
     home_teams = list(df['HomeTeam'])
     away_teams = list(df['AwayTeam'])
     
-    input_values = get_expected_values_1(df)
+    input_values = get_expected_values(df)
     teams = list(input_values['Team'])
     team_dict = {}
     for i in range(len(teams)):
@@ -96,48 +76,6 @@ def simulate_season(df):
     table.add_numbers(list(team_dict.values()))
      
     return table
-
-class Table():
-    # Makes a table 
-    def __init__(self):
-        self.table = pd.DataFrame(
-            columns = ['Team','Points','Win','Draw','Lose','Goals for','Goals against','Goal difference']
-            )
-    def add_numbers(self,team_list):
-        for i in range(len(team_list)):
-            t = team_list[i]
-            self.table = self.table.append(
-                pd.DataFrame(
-                    [[t.name,(t.wins*3+t.draws*1),t.wins,t.draws,t.losses,
-                      t.goals_for,t.goals_against,(t.goals_for-t.goals_against)]],
-                    columns= ['Team','Points','Win','Draw','Lose','Goals for','Goals against','Goal difference']
-                    )
-                )
-        self.table = self.table.sort_values(by='Points',ascending=False)
-        self.table.index = range(1,len(self.table)+1)
-    
-    def show_table(self):
-        return self.table
-    
-class Team():
-    # Team objects which populate the Table
-    def __init__(self,name):
-        self.name = name
-        self.wins = 0
-        self.draws = 0
-        self.losses = 0
-        self.goals_for = 0
-        self.goals_against = 0
-        
-    def add_result(self,scored,conceded):
-        if scored > conceded:
-            self.wins += 1
-        elif scored == conceded:
-            self.draws += 1
-        else:
-            self.losses +=1
-        self.goals_for += scored
-        self.goals_against += conceded
         
 
 #%% Simulate a singloe season
