@@ -8,6 +8,7 @@ Created on Sat Oct 24 15:00:30 2020
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sn
 
 class Table():
     # Makes a table 
@@ -211,7 +212,7 @@ class Simulation(Stats):
     def calc_freq(self):
         # Calculate frequency of each final position for each team
         try:
-            teams = list(self.team_colors.keys())
+            teams = self.teams
             places = np.array([])
             for team in teams:
                 try:
@@ -222,8 +223,8 @@ class Simulation(Stats):
                     places = np.array(
                         [self.season_list[season].table.loc[self.season_list[season].table['Team'] == team].index for season in range(len(self.season_list))])
             
-            freq = np.array([sum(places[:,t]==place+1) for t in range(len(teams)) for place in range(n_places)])
-            freq = freq.reshape((len(teams),n_places)) # rows : teams, cols : places
+            freq = np.array([sum(places[:,t]==place+1) for t in range(len(teams)) for place in range(len(teams))])
+            freq = freq.reshape((len(teams),len(teams))) # rows : teams, cols : places
             self.freq = freq
         except NameError:
             print('No simulation has been ran')
@@ -251,3 +252,25 @@ class Simulation(Stats):
                 loc = 'center',
                 pad = 100)
             plt.show()
+            
+    def plot_position_crosstab(self):
+        fig = plt.figure(dpi=400)
+        fig.set_size_inches(8,8)
+        crosstab = pd.DataFrame(
+            self.freq,
+            columns=range(1,21),
+            index = self.teams)
+        crosstab = crosstab.sort_values(
+            by=[crosstab.columns[i] for i in range(len(crosstab.columns))],
+            ascending=[False]*len(crosstab.columns))
+        ax = sn.heatmap(
+            data=crosstab.T,
+            cmap = 'RdYlGn',
+            cbar = False,
+            annot = True,
+            fmt=".0f",
+            xticklabels=True, 
+            yticklabels=True)
+        ax.set_yticks = range(1,21)
+        #ax.tight_layout()
+        ax.plot()

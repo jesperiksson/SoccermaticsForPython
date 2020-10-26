@@ -22,9 +22,10 @@ t = S.simulate_season()
 s = t.show_table()
 print(s)
 #%% CASE 1 - Naive approach: mu = (team A attack + team B defence) / 2. Set order of games 
-simulation1 = Simulation(df1920,10)
+sim1 = Simulation(df1920,1000)
 
-simulation1.simulate_seasons()
+sim1.simulate_seasons()
 
-
+sim1.calc_freq()
+sim1.plot_position_crosstab()
 
