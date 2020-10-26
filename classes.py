@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 
 class Table():
-    # Makes a table 
+    # Makes a table at the end of a season
     def __init__(self):
-        self.table = pd.DataFrame(
+        self.table = pd.DataFrame( # Initiate an empty table
             columns = ['Team','Points','Win','Draw','Lose','Goals for','Goals against','Goal difference']
             )
-    def add_numbers(self,team_list):
+    def add_numbers(self,team_list): # Is called from the simulate_season method of the Stats class
         for i in range(len(team_list)):
             t = team_list[i]
             self.table = self.table.append(
@@ -43,16 +43,16 @@ class Team():
         self.goals_against = 0
         
     def add_result(self,scored,conceded):
-        if scored > conceded:
+        if scored > conceded: # win
             self.wins += 1
-        elif scored == conceded:
+        elif scored == conceded: # draw
             self.draws += 1
-        else:
-            self.losses +=1
+        else: # loss
+            self.losses +=1 
         self.goals_for += scored
         self.goals_against += conceded
 
-class Stats():
+class Stats(): # raw data, teams, colors, parameters, etc. 
     def __init__(self,df):
         self.df = df
         self.team_colors = {'Arsenal':'#ef0107', 'Aston Villa':'#95bfe5', 'Bournemouth':'#da291c', 'Brighton':'#0057b8',
@@ -66,23 +66,22 @@ class Stats():
         self.teams =list(set(df['HomeTeam']))        
         self.home_teams = list(df['HomeTeam'])
         self.away_teams = list(df['AwayTeam'])
-        expected_values = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
+        expected_values = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded']) # initiate empty DataFrame
         # Naive approach, each team has a offense and a defense expected value
         # Generates a DataFrame with teams and their excpected values
         for i in range(len(self.teams)):
             avg_score = (np.sum(df.loc[df['HomeTeam'] == self.teams[i]]['FTHG']) + np.sum(df.loc[df['AwayTeam'] == self.teams[i]]['FTAG']))/(len(df)/len(self.teams)*2)
             avg_letin = (np.sum(df.loc[df['HomeTeam'] == self.teams[i]]['FTAG']) + np.sum(df.loc[df['AwayTeam'] == self.teams[i]]['FTHG']))/(len(df)/len(self.teams)*2)
-            expected_values = expected_values.append(
+            expected_values = expected_values.append( # Populate the DataFrame
                 pd.DataFrame(
                     [[self.teams[i],avg_score,avg_letin]], columns= ['Team','ExpectedScored','ExpectedConceded']
                     )
                 )
         expected_values.index = range(1,len(self.teams)+1)
-        self.expected_values = expected_values
+        self.expected_values = expected_values # The input values for the naive approach
         
         # Including home advantage, each team has two home and away parameters
         # Generates a DataFrame with teams and their excpected values
-        self.teams =list(set(self.df['HomeTeam']))
         expected_values_home = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
         expected_values_away = pd.DataFrame(columns = ['Team','ExpectedScored','ExpectedConceded'])
         for i in range(len(self.teams)):
@@ -100,8 +99,8 @@ class Stats():
                 )
         expected_values_home.index = range(1,len(self.teams)+1)
         expected_values_away.index = range(1,len(self.teams)+1)
-        self.expected_values_home = expected_values_home
-        self.expected_values_away = expected_values_away
+        self.expected_values_home = expected_values_home # The input values when 
+        self.expected_values_away = expected_values_away # considering home advantage
 
     def simulate_game_poisson(self,home_expected_scored, home_expected_conceded, away_expected_scored, away_expected_conceded):
         # Simple model to predict the result using poisson distribution
@@ -114,9 +113,8 @@ class Stats():
 
     
     def simulate_season(self):
-        # Main function
-        
-        team_dict = {}
+        # A single season
+        team_dict = {} # Using a dictionary to keep track of the Team instances
         for i in range(len(self.teams)):
             team_dict.update({
                 self.teams[i] : Team(self.teams[i])})
@@ -135,7 +133,7 @@ class Stats():
         table.add_numbers(list(team_dict.values()))
         return table
     
-    def simulate_season_homeaway(self):
+    def simulate_season_homeaway(self): # Same as above but considering home advantage and away disadvantage
         team_dict = {}
         for i in range(len(self.teams)):
             team_dict.update({
@@ -156,49 +154,50 @@ class Stats():
         return table
             
     def poisson_regression(self):
-        
+        # TBI, using a regression model from some module and compare it to my results
         pass
 
-class Simulation(Stats):
+class Simulation(Stats): # Same as Stats but for simulating several seasons
     def __init__(self,df,n,team_of_interest = 'Liverpool'):
         super().__init__(df)
-        self.n_seasons = n
+        self.n_seasons = n # Number of seasons to simulate
         self.team_of_interest = team_of_interest
     
     def simulate_seasons(self):
         season_list = np.array([])
-        for i in range(self.n_seasons):
+        for i in range(self.n_seasons): # building a list of all seasons
             season_list = np.append(season_list,self.simulate_season())
         self.season_list = season_list # Last season is stored 
             
     def simulate_seasons_homeaway(self):
         season_list = np.array([])
-        for i in range(self.n_seasons):
+        for i in range(self.n_seasons): # building a list of all seasons
             season_list = np.append(season_list,self.simulate_season_homeaway())
         self.season_list_homeaway = season_list
     
     def plot_hist(self):
-        #Plot hist with selected teams positions
+        #Plot histogram with selected teams positions
         fig = plt.figure(dpi=400)
         ax = fig.add_subplot(111)
-        teams = list(self.team_colors.keys())
-        teams = ['Man City','Liverpool','Arsenal','Chelsea','Man United']
+        cut_off = 6 # The lowest position for which to extend the histogram
+        # teams = list(self.team_colors.keys()) # to use all teams
+        teams = ['Man City','Liverpool','Arsenal','Chelsea','Man United'] # to use selected teams
         places = np.array([])
         for team in teams:
-            try:
-                places = np.concatenate((places,
+            try: # The main case
+                places = np.concatenate((places, # store the positions for each team for each season
                     [self.season_list[season].table.loc[self.season_list[season].table['Team'] == team].index for season in range(len(self.season_list))]),
                     axis = -1)
-            except ValueError:
+            except ValueError: # accounting for the edge case where there is no season list
                 places = np.array(
                     [self.season_list[season].table.loc[self.season_list[season].table['Team'] == team].index for season in range(len(self.season_list))])
         
         plt.hist(places, 
-                 bins = np.arange(1, places.max() + 1.5) - 0.5, 
+                 bins = np.arange(1, cut_off + 1.5) - 0.5, # Putting the bins over the xtick  
                  histtype = 'bar',
-                 color = [self.team_colors[t] for t in teams],
-                 ec = 'k',
-                 alpha = 0.9,
+                 color = [self.team_colors[t] for t in teams], # colors of selected teams
+                 ec = 'k', # Edgecolor 
+                 alpha = 0.9, 
                  zorder = 2)
         plt.xticks(range(int(np.min(places)),int(np.max(places)+1)))
         plt.xlabel('Position')
@@ -211,11 +210,11 @@ class Simulation(Stats):
         
     def calc_freq(self):
         # Calculate frequency of each final position for each team
-        try:
+        try: # If there is a simulation with results that can be counted
             teams = self.teams
             places = np.array([])
             for team in teams:
-                try:
+                try: # This is redundant 
                     places = np.concatenate((places,
                         [self.season_list[season].table.loc[self.season_list[season].table['Team'] == team].index for season in range(len(self.season_list))]),
                         axis = -1)
@@ -253,7 +252,7 @@ class Simulation(Stats):
                 pad = 100)
             plt.show()
             
-    def plot_position_crosstab(self):
+    def plot_position_crosstab(self): # Plots the heatmap 
         fig = plt.figure(dpi=400)
         fig.set_size_inches(8,8)
         crosstab = pd.DataFrame(
@@ -263,9 +262,10 @@ class Simulation(Stats):
         crosstab = crosstab.sort_values(
             by=[crosstab.columns[i] for i in range(len(crosstab.columns))],
             ascending=[False]*len(crosstab.columns))
-        ax = sn.heatmap(
+        self.crosstab = crosstab # If you want to do some statistics
+        ax = sn.heatmap( # TBD, change the annotations to percentage of all seasons
             data=crosstab.T,
-            cmap = 'RdYlGn',
+            cmap = 'RdYlGn', # Is there a better one?
             cbar = False,
             annot = True,
             fmt=".0f",
