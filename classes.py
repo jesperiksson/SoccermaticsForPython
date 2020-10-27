@@ -264,11 +264,8 @@ class Simulation(Stats): # Same as Stats but for simulating several seasons
             by=[crosstab.columns[i] for i in range(len(crosstab.columns))],
             ascending=[False]*len(crosstab.columns))
         self.crosstab = crosstab # If you want to do some statistics
-        crosstab_percent  = crosstab.mul(
-            crosstab.div(
-                np.ones(
-                    (len(crosstab.columns),len(crosstab.index)))*self.n)
-                )
+        crosstab_percent = crosstab.div(np.ones((len(crosstab.columns),len(crosstab.index)))*self.n_seasons)
+        crosstab_percent = crosstab_percent.mul(np.ones((len(crosstab.columns),len(crosstab.index)))*100)
         ax = sn.heatmap( # TBD, change the annotations to percentage of all seasons
             data=crosstab_percent.T,
             norm = colors.PowerNorm(gamma=0.4), #  Ḿore emphasis towards the green end
