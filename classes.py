@@ -8,6 +8,7 @@ Created on Sat Oct 24 15:00:30 2020
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import seaborn as sn
 
 class Table():
@@ -263,8 +264,14 @@ class Simulation(Stats): # Same as Stats but for simulating several seasons
             by=[crosstab.columns[i] for i in range(len(crosstab.columns))],
             ascending=[False]*len(crosstab.columns))
         self.crosstab = crosstab # If you want to do some statistics
+        crosstab_percent  = crosstab.mul(
+            crosstab.div(
+                np.ones(
+                    (len(crosstab.columns),len(crosstab.index)))*self.n)
+                )
         ax = sn.heatmap( # TBD, change the annotations to percentage of all seasons
-            data=crosstab.T,
+            data=crosstab_percent.T,
+            norm = colors.PowerNorm(gamma=0.4), #  Ḿore emphasis towards the green end
             cmap = 'RdYlGn', # Is there a better one?
             cbar = False,
             annot = True,
