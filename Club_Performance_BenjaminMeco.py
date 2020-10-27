@@ -71,10 +71,11 @@ def simulate(team_list):
         for j in range(1,len(team_list)):
             t_1 = team_list[i]
             t_2 = team_list[(i+j)%len(team_list)]
-            g_1 = outcomeWeights(np.random.uniform(0,1),t_1[1])
-            c_1 = outcomeWeights(np.random.uniform(0,1),t_1[2])
-            g_2 = outcomeWeights(np.random.uniform(0,1),t_2[1])
-            c_2 = outcomeWeights(np.random.uniform(0,1),t_2[2])
+            g_1 = np.random.poisson(t_1[1])
+            c_1 = np.random.poisson(t_1[2])
+            g_2 = np.random.poisson(t_2[1])
+            c_2 = np.random.poisson(t_2[2])
+
             if(g_1 + c_2 > g_2 + c_1):
                 points[i] = points[i] + 3
             elif(g_1 + c_2 < g_2 + c_1):
@@ -162,13 +163,13 @@ teamList.sort()
 teamPoisson = []
     
 for t in teamList:
-    teamPoisson = teamPoisson + [[t[0],getPoisson(t[1]/38),getPoisson(t[2]/38)]]
+    teamPoisson = teamPoisson + [[t[0],t[1]/38,t[2]/38]]
+    print([t[0],t[1]/38,t[2]/38])
 
 # finally some simulations, first with the Poisson distributions:
 N = 100
 team_placements = simulMany(teamPoisson,N)
 
-'''
 for t in team_placements:
 
     plt.plot(range(1,21),t[1], color = "blue")
@@ -176,23 +177,22 @@ for t in team_placements:
     plt.ylabel("Probability of placement for " + t[0])
     plt.xticks(range(1,21))
     plt.show()
-'''
 
 # next we look at how the performance of liverpool changes when they 
 # improve the offence/defence or both. We do this by changing their parameters in the
 # poisson distribution.  
 
-lambda_off = teamList[indexOf("Liverpool",teamList)][1]/38
-lambda_def = teamList[indexOf("Liverpool",teamList)][2]/38
+lambda_off = teamPoisson[indexOf("Liverpool",teamPoisson)][1]
+lambda_def = teamPoisson[indexOf("Liverpool",teamPoisson)][2]
 plt.figure(dpi = 160)
 
 # first we look at improving offence:
 for d in np.linspace(10,25,2):
     print(str(d))
-    # make the modifications:: 
-    for k in range(0,11):
-        teamPoisson[indexOf("Liverpool",teamPoisson)][1][k] = pois(lambda_off + d/38,k)
-        teamPoisson[indexOf("Liverpool",teamPoisson)][2][k] = pois(lambda_def,k)
+
+    # make the modifications:
+    teamPoisson[indexOf("Liverpool",teamPoisson)][1] = lambda_off + d/38
+
     # simulate and plot the distributions of Liverpool:
     N = 100
     T = simulMany(teamPoisson,N)
@@ -202,11 +202,10 @@ for d in np.linspace(10,25,2):
 # secondly we look at improving defence:
 for d in np.linspace(10,25,2):
     print(str(d))
-    # make the modifications:: 
-    for k in range(0,11):
-        teamPoisson[indexOf("Liverpool",teamPoisson)][1][k] = pois(lambda_off,k)
-        teamPoisson[indexOf("Liverpool",teamPoisson)][2][k] = pois(lambda_def-d/38,k)
-    
+
+    # make the modifications:
+    teamPoisson[indexOf("Liverpool",teamPoisson)][2] = lambda_def-d/38
+
     # simulate and plot the distributions of Liverpool:
     N = 100
     T = simulMany(teamPoisson,N)
